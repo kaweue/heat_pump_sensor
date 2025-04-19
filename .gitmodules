@@ -1,0 +1,3 @@
+[submodule "ESPAltherma"]
+	path = ESPAltherma
+	url = https://github.com/raomin/ESPAltherma
