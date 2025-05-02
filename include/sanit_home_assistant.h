@@ -10,7 +10,7 @@ namespace sanit
     class HomeAssistant
     {
     public:
-        HomeAssistant(PubSubClient &pub_sub_client) : pub_sub_client_(pub_sub_client)
+        HomeAssistant(String unit_name, PubSubClient &pub_sub_client) : unit_name_(unit_name), pub_sub_client_(pub_sub_client)
         {
             pub_sub_client_.setCallback([this](char *topic, byte *payload, unsigned int length)
                                         { OnMqttMsg(topic, payload, length); });
@@ -25,7 +25,7 @@ namespace sanit
         ButtonHandler sensor_update_handler_;
         ButtonHandler sensor_reboot_handler_;
         PubSubClient &pub_sub_client_;
-        /* data */
+        String unit_name_;
     };
 
 }

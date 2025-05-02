@@ -27,7 +27,7 @@ char registryIDs[32]; // Holds the registries to query
 bool busy = false;
 
 UnitConfiguration *uc;
-sanit::HomeAssistant ha(client);
+sanit::HomeAssistant *ha;
 
 Timer<10, millis> timer;
 const int kTurnOffScreenTimout = 45000;
@@ -277,8 +277,9 @@ void setup()
   reconnectMqtt();
   initRegistries();
   showStatus("Monitoring");
-  ha.RegisterSensorRebootButton([]()
-                                { ESP.restart(); });
+  ha = new sanit::HomeAssistant(heat_pump_sensor->GetUniqueId(), client);
+  ha->RegisterSensorRebootButton([]()
+                                 { ESP.restart(); });
   setupOTA();
 
   turn_screen_task = timer.in(kTurnOffScreenTimout, turnOffScreen);
