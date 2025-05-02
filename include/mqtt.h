@@ -66,8 +66,3 @@ void reconnectMqtt()
     }
   }
 }
-
-void callback(char *topic, byte *payload, unsigned int length)
-{
-  Serial.printf("Message arrived [%s] : %s\n", topic, payload);
-}

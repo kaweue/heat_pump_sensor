@@ -3,14 +3,16 @@
 #include <HardwareSerial.h>
 #include <WiFi.h>
 
+#include <HttpsOTAUpdate.h>
 #include <PubSubClient.h>
+#include <arduino-timer.h>
 
 #include "settings.h"
 #include "setup.h"
 
-#include "HttpsOTAUpdate.h"
 #include "Preferences.h"
 #include "certs.h"
+#include "sanit_home_assistant.h"
 #include "unit_configuration.h"
 
 #include "converters.h"
@@ -25,6 +27,11 @@ char registryIDs[32]; // Holds the registries to query
 bool busy = false;
 
 UnitConfiguration *uc;
+sanit::HomeAssistant ha(client);
+
+Timer<10, millis> timer;
+const int kTurnOffScreenTimout = 45000;
+Timer<10, millis>::Task turn_screen_task;
 
 void showStatus(String status);
 
@@ -69,12 +76,17 @@ void updateValues(char regID)
   }
 }
 
-uint16_t loopcount = 0;
-boolean display_sleeping = false;
+bool turnOffScreen(void *)
+{
+  M5.Display.sleep();
+  return false;
+}
 
 void extraLoop()
 {
   client.loop();
+  timer.tick<void>();
+
   if (M5.BtnC.wasPressed())
   {
     mqttSerial.printf("M5.BtnC.wasPressed()");
@@ -82,6 +94,12 @@ void extraLoop()
     M5.update();
     delay(3000);
     ESP.restart();
+  }
+  if (M5.BtnA.wasPressed())
+  {
+    M5.Display.wakeup();
+    timer.cancel(turn_screen_task);
+    turn_screen_task = timer.in(kTurnOffScreenTimout, turnOffScreen);
   }
   M5.update();
 }
@@ -101,15 +119,18 @@ void checkWifi()
   }
 }
 
-void loadConfiguration() {
+void loadConfiguration()
+{
   Preferences preferences;
   preferences.begin("sanit_app", false);
 
-  if (sizeof(WIFI_SSID) > 1) {
+  if (sizeof(WIFI_SSID) > 1)
+  {
     preferences.putString("ssid", WIFI_SSID);
   }
 
-  if (sizeof(WIFI_PWD) > 1) {
+  if (sizeof(WIFI_PWD) > 1)
+  {
     preferences.putString("wifi_pass", WIFI_PWD);
   }
 
@@ -196,7 +217,7 @@ void initRegistries()
   }
 
   int i = 0;
-  for (auto &&label : labelDefs)
+  for (auto &label : labelDefs)
   {
     if (!contains(registryIDs, sizeof(registryIDs), label.registryID))
     {
@@ -204,14 +225,7 @@ void initRegistries()
       registryIDs[i++] = label.registryID;
     }
   }
-  if (i == 0)
-  {
-    mqttSerial.printf("ERROR - No values selected in the include file. Stopping.\n");
-    while (true)
-    {
-      extraLoop();
-    }
-  }
+  assert(i != 0);
 }
 
 void setupScreen()
@@ -224,7 +238,8 @@ void setupScreen()
   M5.Lcd.setTextColor(TFT_GREEN);
 }
 
-void showStatus(String status) {
+void showStatus(String status)
+{
   M5.Lcd.fillScreen(TFT_BLACK);
   int xpos = M5.Lcd.width() / 2;  // Half the screen width
   int ypos = M5.Lcd.height() / 2; // Half the screen width
@@ -241,19 +256,17 @@ void setup()
   loadConfiguration();
   setupScreen();
   showStatus("Sanit Sensor");
+
   MySerial.begin(9600, SERIAL_CONFIG, RX_PIN, TX_PIN);
 
   mqttSerial.print("Setting up wifi...");
   showStatus("Wifi connecting...");
   setup_wifi();
 
-  // Required to establish encrypted connections.
-  // If you want to be more secure here, you can use the CA certificate to allow the wifi client to verify the other party. NOTE: If you use the CA certificate here, then you need to make sure to update it here regulary!
   espClient.setInsecure();
   espClient.setTimeout(5);
 
   client.setBufferSize(MAX_MSG_SIZE); // to support large json message
-  client.setCallback(callback);
   client.setServer(MQTT_SERVER, MQTT_PORT);
 
   auto timeout = espClient.getTimeout();
@@ -264,13 +277,17 @@ void setup()
   reconnectMqtt();
   initRegistries();
   showStatus("Monitoring");
+  ha.RegisterSensorRebootButton([]()
+                                { ESP.restart(); });
   setupOTA();
+
+  turn_screen_task = timer.in(kTurnOffScreenTimout, turnOffScreen);
 }
 
 void waitLoop(uint ms)
 {
   unsigned long start = millis();
-  while (millis() < start + ms) // wait .5sec between registries
+  while (millis() < start + ms)
   {
     extraLoop();
   }
@@ -304,7 +321,6 @@ void loop()
     {
       converter.readRegistryValues(buff, PROTOCOL); // process all values from the register
       updateValues(registryIDs[i]);                 // send them in mqtt
-      // waitLoop(500);//wait .5sec between registries
     }
   }
   sendValues(); // Send the full json message
