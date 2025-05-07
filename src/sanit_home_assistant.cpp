@@ -8,7 +8,7 @@ namespace
     {
         char json_buffer[1024];
         JsonDocument doc;
-        doc["name"] = "Restart Sanit Test Sensor 1";
+        doc["name"] = "Restart " + unit_name + " button";
         doc["payload_press"] = "RESTART";
         doc["unique_id"] = unit_name + "_restart";
         doc["command_topic"] = "~/COMMANDS",
