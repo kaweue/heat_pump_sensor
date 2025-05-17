@@ -35,7 +35,6 @@ namespace sanit
         auto identifiers = device["identifiers"].to<JsonArray>();
         identifiers.add(unit_name_);
 
-        String json;
         auto size = serializeJson(doc, json_buffer, sizeof(json_buffer));
         return String(json_buffer, size);
     }

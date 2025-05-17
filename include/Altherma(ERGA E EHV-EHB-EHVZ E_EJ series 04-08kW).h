@@ -217,7 +217,7 @@ LabelDef labelDefs[] = {
 //{0x64,2,301,1,-1,"Bypass Valve Output"},
 //{0x64,3,105,2,-1,"BE_COP"},
 //{0x64,5,105,2,1,"Hybrid Heating Target Temp."},
-//{0x64,7,105,2,1,"Boiler Heating Target Temp."},
+{0x64,7,105,2,LabelDef::DataType::TEMPERATURE,"Boiler Heating Target Temp."},
 //{0x64,9,302,1,-1,"Add pump"},
 //{0x64,9,301,1,-1,"Main pump"},
 //{0x64,10,118,2,1,"Mixed water temp."},

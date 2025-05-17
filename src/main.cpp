@@ -15,19 +15,26 @@
 #include "sanit_home_assistant.h"
 #include "unit_configuration.h"
 
+namespace altherma
+{
 #include "converters.h"
+}
 #include "mqtt.h"
 #include "mqttserial.h"
 #include "restart.h"
 
 #include "comm.h"
 
-Converter converter;
+#include "daikin_example_responses.h"
+
+altherma::Converter converter;
 char registryIDs[32]; // Holds the registries to query
 bool busy = false;
 
 UnitConfiguration *uc;
 sanit::HomeAssistant *ha;
+
+DaikinExampleResponses daikinExample;
 
 Timer<10, millis> timer;
 const int kTurnOffScreenTimout = 45000;
@@ -66,12 +73,11 @@ void updateValues(char regID)
 
     if (alpha)
     {
-
-      snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%s\",", labels[i]->label, labels[i]->asString);
+      heat_pump_attribues[labels[i]->label] = labels[i]->asString;
     }
     else
     { // number, no quotes
-      snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labels[i]->label, labels[i]->asString);
+      heat_pump_attribues[labels[i]->label] = labels[i]->asString;
     }
   }
 }
@@ -330,19 +336,19 @@ void loop()
       converter.readRegistryValues(buff, PROTOCOL); // process all values from the register
       updateValues(registryIDs[i]);                 // send them in mqtt
     }
+    else
+    {
+      mqttSerial.printf("Registry ID %02x not found in the response.\n", registryIDs[i]);
+
+      unsigned char buff[DaikinExampleResponses::MAX_BUFFER_SIZE] = {0};
+      if (daikinExample.GetExampleResponse(registryIDs[i], buff))
+      {
+        mqttSerial.printf("Registry ID %02x not found in the response. Using example response.\n", registryIDs[i]);
+        converter.readRegistryValues(buff, PROTOCOL);
+        updateValues(registryIDs[i]);
+      }
+    }
   }
-
-
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[1].label, "2");
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[2].label, "15");
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[4].label, "55");
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[5].label, "20");
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[6].label, "25");
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[7].label, "0.75");
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%s\",", labelDefs[0].label, "On");
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%s\",", labelDefs[3].label, "Off");
-
-
 
   sendValues(); // Send the full json message
   mqttSerial.printf("Done. Waiting %ld ms...", FREQUENCY - millis() + start);

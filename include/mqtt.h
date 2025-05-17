@@ -1,14 +1,12 @@
 #include "restart.h"
+#include <ArduinoJson.h>
 #include <PubSubClient.h>
 
 #include "sanit_heat_pump_sensor.h"
 
-#define EEPROM_CHK 1
-#define EEPROM_STATE 0
-
-char jsonbuff[MAX_MSG_SIZE] = "{\0";
-
 #include <WiFiClientSecure.h>
+
+JsonDocument heat_pump_attribues;
 WiFiClientSecure espClient;
 
 PubSubClient client(espClient);
@@ -17,20 +15,24 @@ sanit::HeatPumpSensor *heat_pump_sensor;
 
 const char *url = "https://update.sanitapp.xyz/firmware.bin";
 
+char json_buffer[MAX_MSG_SIZE];
+
 void sendValues()
 {
   Serial.printf("Sending values in MQTT.\n");
   // Add Power values
   //  getBatteryVoltage returns battery voltage [mV] as an int16_t
   float batteryVoltage = (float)M5.Power.getBatteryVoltage() / 1000; // convert to V as a float
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%.3g\",", "M5BatV", batteryVoltage);
 
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%d\",", "WifiRSSI", WiFi.RSSI());
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%d\",", "FreeMem", ESP.getFreeHeap());
-  jsonbuff[strlen(jsonbuff) - 1] = '}';
+  heat_pump_attribues["FreeMem"] = ESP.getFreeHeap();
+  heat_pump_attribues["M5BatV"] = batteryVoltage;
+  heat_pump_attribues["WifiRSSI"] = WiFi.RSSI();
 
-  client.publish(heat_pump_sensor->GetJsonAttributesTopic().c_str(), jsonbuff);
-  strcpy(jsonbuff, "{\0");
+  auto size = serializeJson(heat_pump_attribues, json_buffer, sizeof(json_buffer));
+  json_buffer[size] = '\0'; // null terminate the string
+  client.publish(heat_pump_sensor->GetJsonAttributesTopic().c_str(), json_buffer);
+
+  heat_pump_attribues.clear();
 }
 
 void reconnectMqtt()
