@@ -25,7 +25,7 @@ void sendValues()
   float batteryVoltage = (float)M5.Power.getBatteryVoltage() / 1000; // convert to V as a float
   snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%.3g\",", "M5BatV", batteryVoltage);
 
-  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%ddBm\",", "WifiRSSI", WiFi.RSSI());
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%d\",", "WifiRSSI", WiFi.RSSI());
   snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%d\",", "FreeMem", ESP.getFreeHeap());
   jsonbuff[strlen(jsonbuff) - 1] = '}';
 

@@ -23,7 +23,7 @@ namespace sanit
     {
         char json_buffer[1024];
         JsonDocument doc;
-        doc["name"] = unit_name_;
+        doc["name"] = "Heat pump sensor";
         doc["stat_t"] = "~/LWT";
         doc["pl_avail"] = "Online";
         doc["pl_not_avail"] = "Offline";
@@ -31,6 +31,7 @@ namespace sanit
         doc["~"] = unit_name_;
         doc["json_attr_t"] = "~/ATTR";
         auto device = doc["device"].to<JsonObject>();
+        device["name"] = unit_name_;
         auto identifiers = device["identifiers"].to<JsonArray>();
         identifiers.add(unit_name_);
 

@@ -280,6 +280,13 @@ void setup()
   ha = new sanit::HomeAssistant(heat_pump_sensor->GetUniqueId(), client);
   ha->RegisterSensorRebootButton([]()
                                  { ESP.restart(); });
+  ha->RegisterSensor("M5BatV", LabelDef::DataType::VOLTAGE);
+  ha->RegisterSensor("WifiRSSI", LabelDef::DataType::SIGNAL_STRENGTH);
+  ha->RegisterSensor("FreeMem", LabelDef::DataType::DATA_SIZE);
+  for (const auto &label : labelDefs)
+  {
+    ha->RegisterSensor(label.label, label.dataType);
+  }
   setupOTA();
 
   turn_screen_task = timer.in(kTurnOffScreenTimout, turnOffScreen);
@@ -324,6 +331,19 @@ void loop()
       updateValues(registryIDs[i]);                 // send them in mqtt
     }
   }
+
+
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[1].label, "2");
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[2].label, "15");
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[4].label, "55");
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[5].label, "20");
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[6].label, "25");
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":%s,", labelDefs[7].label, "0.75");
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%s\",", labelDefs[0].label, "On");
+  snprintf(jsonbuff + strlen(jsonbuff), MAX_MSG_SIZE - strlen(jsonbuff), "\"%s\":\"%s\",", labelDefs[3].label, "Off");
+
+
+
   sendValues(); // Send the full json message
   mqttSerial.printf("Done. Waiting %ld ms...", FREQUENCY - millis() + start);
   waitLoop(FREQUENCY - millis() + start);

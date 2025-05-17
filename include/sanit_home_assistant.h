@@ -19,6 +19,7 @@ namespace sanit
         void OnMqttMsg(char *topic, byte *payload, unsigned int length);
 
         bool RegisterSensorRebootButton(ButtonHandler handler);
+        bool RegisterSensor(const String &attribute, const LabelDef::DataType &data_type);
         bool RegisterSensorUpdateButton(ButtonHandler handler);
 
     private:
