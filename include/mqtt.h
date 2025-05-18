@@ -13,8 +13,6 @@ PubSubClient client(espClient);
 
 sanit::HeatPumpSensor *heat_pump_sensor;
 
-const char *url = "https://update.sanitapp.xyz/firmware.bin";
-
 char json_buffer[MAX_MSG_SIZE];
 
 void sendValues()

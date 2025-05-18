@@ -34,7 +34,7 @@ bool busy = false;
 UnitConfiguration *uc;
 sanit::HomeAssistant *ha;
 
-DaikinExampleResponses daikinExample;
+sanit::DaikinExampleResponses daikinExample;
 
 Timer<10, millis> timer;
 const int kTurnOffScreenTimout = 45000;
@@ -340,7 +340,7 @@ void loop()
     {
       mqttSerial.printf("Registry ID %02x not found in the response.\n", registryIDs[i]);
 
-      unsigned char buff[DaikinExampleResponses::MAX_BUFFER_SIZE] = {0};
+      unsigned char buff[sanit::DaikinExampleResponses::MAX_BUFFER_SIZE] = {0};
       if (daikinExample.GetExampleResponse(registryIDs[i], buff))
       {
         mqttSerial.printf("Registry ID %02x not found in the response. Using example response.\n", registryIDs[i]);

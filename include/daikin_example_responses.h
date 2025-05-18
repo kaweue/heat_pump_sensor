@@ -3,6 +3,9 @@
 
 #include <math.h>
 
+namespace sanit
+{
+
 class DaikinExampleResponses {
 public:
     static const int MAX_BUFFER_SIZE = 16;
@@ -154,5 +157,6 @@ private:
         return 15;
     }
 };
+}
 
 #endif // DAIKIN_EXAMPLE_RESPONSES_H
